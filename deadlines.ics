@@ -72,29 +72,41 @@ DESCRIPTION:Principles and Practice of Parallel Programming.
 URL:https://ppopp26.sigplan.org
 END:VEVENT
 BEGIN:VEVENT
-UID:ASPLOS-deadline-20261101@hil-venue-tracker
-DTSTART;VALUE=DATE:20261101
-DTEND;VALUE=DATE:20261102
-SUMMARY:ASPLOS Paper Deadline (Approximate dates; verify for current year)
+UID:ASPLOS-deadline-20260415@hil-venue-tracker
+DTSTART;VALUE=DATE:20260415
+DTEND;VALUE=DATE:20260416
+SUMMARY:ASPLOS Paper Deadline (April cycle)
 DESCRIPTION:ACM International Conference on Architectural Support for Progr
- amming Languages and Operating Systems submission deadline. (Approximate d
- ates; verify for current year)
-URL:https://asplos-conference.org
+ amming Languages and Operating Systems submission deadline. (April cycle)
+URL:https://www.asplos-conference.org/
 BEGIN:VALARM
 TRIGGER:-P30D
 ACTION:DISPLAY
-DESCRIPTION:Reminder: ASPLOS Paper Deadline (Approximate dates; verify for 
- current year)
+DESCRIPTION:Reminder: ASPLOS Paper Deadline (April cycle)
 END:VALARM
 END:VEVENT
 BEGIN:VEVENT
-UID:ASPLOS-conference-20270405@hil-venue-tracker
-DTSTART;VALUE=DATE:20270405
-DTEND;VALUE=DATE:20270406
+UID:ASPLOS-deadline-20260909@hil-venue-tracker
+DTSTART;VALUE=DATE:20260909
+DTEND;VALUE=DATE:20260910
+SUMMARY:ASPLOS Paper Deadline (Sep cycle)
+DESCRIPTION:ACM International Conference on Architectural Support for Progr
+ amming Languages and Operating Systems submission deadline. (Sep cycle)
+URL:https://www.asplos-conference.org/
+BEGIN:VALARM
+TRIGGER:-P30D
+ACTION:DISPLAY
+DESCRIPTION:Reminder: ASPLOS Paper Deadline (Sep cycle)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:ASPLOS-conference-20270411@hil-venue-tracker
+DTSTART;VALUE=DATE:20270411
+DTEND;VALUE=DATE:20270412
 SUMMARY:ASPLOS Conference
 DESCRIPTION:ACM International Conference on Architectural Support for Progr
  amming Languages and Operating Systems.
-URL:https://asplos-conference.org
+URL:https://www.asplos-conference.org/
 END:VEVENT
 BEGIN:VEVENT
 UID:HPCA-deadline-20260809@hil-venue-tracker
