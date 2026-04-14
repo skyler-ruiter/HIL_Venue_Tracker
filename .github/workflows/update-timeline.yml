@@ -1,0 +1,45 @@
+name: Update Timeline
+
+# Runs when conferences.csv changes on main, or manually via the Actions tab.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'conferences.csv'
+  workflow_dispatch:
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install matplotlib
+
+      - name: Regenerate timeline image
+        env:
+          MPLBACKEND: Agg   # headless — no display needed
+        run: python timeline_generator.py --no-show --output conference_timeline.png
+
+      - name: Regenerate full-venue timeline
+        env:
+          MPLBACKEND: Agg
+        run: python timeline_generator.py --no-show --show-all --output conference_timeline_all.png
+
+      - name: Regenerate iCal file
+        run: python generate_ical.py --output deadlines.ics
+
+      - name: Commit updated artifacts
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "ci: regenerate timeline and ical from updated conferences.csv [skip ci]"
+          file_pattern: "conference_timeline.png conference_timeline_all.png deadlines.ics"

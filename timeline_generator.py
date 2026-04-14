@@ -3,9 +3,10 @@ import matplotlib.patches as mpatches
 import matplotlib.dates as mdates
 import datetime as dt
 import csv
+import argparse
 from matplotlib.lines import Line2D
 
-BASE_YEAR = 2026
+BASE_YEAR = 2027
 
 TIER_COLORS = {
     'top':      '#c0392b',  # dark red
@@ -13,31 +14,46 @@ TIER_COLORS = {
     'workshop': '#7f8c8d',  # gray
 }
 
+NON_TIER1_ALPHA = 0.28
 
-def load_conferences(csv_path):
+
+def load_conferences(csv_path, tier1_only=True):
     conferences = {}
     with open(csv_path, newline='') as f:
         reader = csv.DictReader(f)
         for row in reader:
             name = row['name']
+            is_tier1 = row['tier1'].strip().lower() == 'true'
+            if tier1_only and not is_tier1:
+                continue
             if name not in conferences:
                 conferences[name] = {
                     'name': name,
+                    'full_name': row.get('full_name', name),
                     'tier': row['tier'],
+                    'tier1': is_tier1,
                     'deadlines': [],
                     'conference': None,
+                    'url': row.get('url', ''),
+                    'notes': row.get('notes', ''),
+                    'notes_file': row.get('notes_file', ''),
+                    'acceptance_rate': row.get('acceptance_rate', ''),
                 }
             year = BASE_YEAR + int(row['year_offset'])
             date = dt.date(year, int(row['month']), int(row['day']))
             if row['event_type'] == 'conference':
                 conferences[name]['conference'] = date
             else:
-                conferences[name]['deadlines'].append(date)
+                conferences[name]['deadlines'].append({
+                    'date': date,
+                    'notes': row.get('notes', '').strip(),
+                })
     return list(conferences.values())
 
 
-def plot_timeline(conferences):
-    conferences.sort(key=lambda c: c['conference'])
+def plot_timeline(conferences, output_path='conference_timeline.png', show_all=False, show=True):
+    conferences = [c for c in conferences if c['conference'] is not None]
+    conferences.sort(key=lambda c: min(d['date'] for d in c['deadlines']) if c['deadlines'] else c['conference'])
     n = len(conferences)
 
     fig, ax = plt.subplots(figsize=(18, max(6, n * 0.6 + 2)))
@@ -60,28 +76,39 @@ def plot_timeline(conferences):
 
     for i, conf in enumerate(conferences):
         color = TIER_COLORS[conf['tier']]
-        deadlines = sorted(conf['deadlines'])
+        alpha = 1.0 if conf['tier1'] else NON_TIER1_ALPHA
+        deadlines = sorted(conf['deadlines'], key=lambda d: d['date'])
         conf_date = conf['conference']
 
         # Span line from earliest deadline to conference date
         if deadlines:
-            ax.hlines(i, deadlines[0], conf_date, colors=color, linewidth=2.5,
-                      alpha=0.3, zorder=2)
+            ax.hlines(i, deadlines[0]['date'], conf_date, colors=color, linewidth=2.5,
+                      alpha=0.3 * alpha, zorder=2)
 
-        # Deadline markers + tiny date labels
+        # Deadline markers + date label above + short note below
         for dl in deadlines:
-            ax.scatter(dl, i, color=color, marker='D', s=65, zorder=4,
-                       edgecolors='white', linewidths=0.5)
-            ax.text(dl, i + 0.22, dl.strftime('%-m/%-d'),
-                    ha='center', va='bottom', fontsize=6.5, color=color, zorder=5)
+            date  = dl['date']
+            note  = dl['notes']
+            ax.scatter(date, i, color=color, marker='D', s=65, zorder=4,
+                       edgecolors='white', linewidths=0.5, alpha=alpha)
+            ax.text(date, i + 0.22, date.strftime('%-m/%-d'),
+                    ha='center', va='bottom', fontsize=6.5, color=color, zorder=5,
+                    alpha=alpha)
+            if note and len(note) <= 14:
+                ax.text(date, i - 0.22, note,
+                        ha='center', va='top', fontsize=5.5, color=color, zorder=5,
+                        alpha=alpha * 0.85, style='italic')
 
         # Conference marker
         ax.scatter(conf_date, i, color=color, marker='*', s=280, zorder=4,
-                   edgecolors='white', linewidths=0.5)
+                   edgecolors='white', linewidths=0.5, alpha=alpha)
 
-    # Y axis
+    # Y axis — bold labels for tier-1, normal for others
     ax.set_yticks(range(n))
-    ax.set_yticklabels([c['name'] for c in conferences], fontsize=10)
+    labels = ax.set_yticklabels([c['name'] for c in conferences], fontsize=10)
+    for label, conf in zip(labels, conferences):
+        label.set_alpha(1.0 if conf['tier1'] else NON_TIER1_ALPHA + 0.1)
+
     ax.set_ylim(-0.6, n + 0.2)
 
     # X axis: every month
@@ -112,20 +139,44 @@ def plot_timeline(conferences):
         Line2D([0], [0], marker='*', color='w', markerfacecolor='#555',
                label='Conference Date', markersize=12),
     ]
+    if show_all:
+        legend_elements.append(
+            mpatches.Patch(color='#aaa', alpha=NON_TIER1_ALPHA + 0.1, label='Non-Tier-1 (faded)')
+        )
     ax.legend(handles=legend_elements, loc='upper left', fontsize=8,
               framealpha=0.9, edgecolor='#ccc')
 
-    ax.set_title(f'Conference Submission & Event Timeline  ({BASE_YEAR - 1}–{BASE_YEAR})',
-                 fontsize=13, fontweight='bold', pad=12)
+    title_suffix = '  [all venues]' if show_all else '  [tier-1 only]'
+    ax.set_title(
+        f'Conference Submission & Event Timeline  ({BASE_YEAR - 1}–{BASE_YEAR}){title_suffix}',
+        fontsize=13, fontweight='bold', pad=12)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
     plt.tight_layout()
-    plt.savefig('conference_timeline.png', dpi=150, bbox_inches='tight')
-    plt.show()
+    plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    print(f'Saved to {output_path}')
+    if show:
+        plt.show()
 
 
 if __name__ == '__main__':
-    confs = load_conferences('conferences.csv')
-    plot_timeline(confs)
+    parser = argparse.ArgumentParser(
+        description='Generate a conference submission and event timeline.')
+    parser.add_argument(
+        '--show-all', action='store_true',
+        help='Include non-tier-1 venues (shown faded). Default: tier-1 only.')
+    parser.add_argument(
+        '--csv', default='conferences.csv',
+        help='Path to the conferences CSV (default: conferences.csv).')
+    parser.add_argument(
+        '--output', default='conference_timeline.png',
+        help='Output image path (default: conference_timeline.png).')
+    parser.add_argument(
+        '--no-show', action='store_true',
+        help='Save the image without opening a viewer (useful for CI/headless use).')
+    args = parser.parse_args()
 
+    confs = load_conferences(args.csv, tier1_only=not args.show_all)
+    plot_timeline(confs, output_path=args.output, show_all=args.show_all,
+                  show=not args.no_show)

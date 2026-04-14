@@ -205,3 +205,12 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+###################
+
+.claude/
+work_items.txt
+
+# Personal files — keep local, do not commit
+targets.csv
+*.ics
