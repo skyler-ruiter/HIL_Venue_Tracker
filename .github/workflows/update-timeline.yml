@@ -1,11 +1,13 @@
 name: Update Timeline
 
-# Runs when conferences.csv changes on main, or manually via the Actions tab.
+# Runs when conferences.csv changes on main, monthly on the 1st, or manually via the Actions tab.
 on:
   push:
     branches: [main]
     paths:
       - 'conferences.csv'
+  schedule:
+    - cron: '0 6 1 * *'   # 1st of every month at 06:00 UTC
   workflow_dispatch:
 
 env:
